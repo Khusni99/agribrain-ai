@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+
+# Environment
+.env
+*.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ML Models
+*.pt
+*.pth
+*.onnx
+*.h5
+
+# Data
+*.db
+*.sqlite
+
+# Logs
+*.log
+
+# Docker
+postgres_data/
+
+# Flutter
+frontend/build/
+frontend/.dart_tool/
+frontend/.packages
+frontend/.pub/
