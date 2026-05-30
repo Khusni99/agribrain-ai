@@ -14,15 +14,12 @@ def _ensure_async_driver(url: str) -> str:
         asyncpg_url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     else:
         return url
-    # asyncpg uses 'ssl' param, not 'sslmode'
-    asyncpg_url = asyncpg_url.replace("?sslmode=require", "?ssl=true")
-    asyncpg_url = asyncpg_url.replace("&sslmode=require", "&ssl=true")
-    asyncpg_url = asyncpg_url.replace("?sslmode=verify-full", "?ssl=true")
-    asyncpg_url = asyncpg_url.replace("&sslmode=verify-full", "&ssl=true")
-    asyncpg_url = asyncpg_url.replace("?sslmode=verify-ca", "?ssl=true")
-    asyncpg_url = asyncpg_url.replace("&sslmode=verify-ca", "&ssl=true")
-    asyncpg_url = asyncpg_url.replace("?sslmode=disable", "?ssl=false")
-    asyncpg_url = asyncpg_url.replace("&sslmode=disable", "&ssl=false")
+    # asyncpg does not support sslmode/channel_binding as kwargs
+    import re as _re
+    for param in ("sslmode", "channel_binding"):
+        asyncpg_url = _re.sub(rf"[\?&]{param}=[^&]+", "", asyncpg_url)
+    asyncpg_url = _re.sub(r"\?&", "?", asyncpg_url)
+    asyncpg_url = asyncpg_url.rstrip("?&")
     return asyncpg_url
 
 
