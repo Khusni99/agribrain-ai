@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/brand_header.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -62,8 +63,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             key: _formKey,
             child: Column(
               children: [
+                const SizedBox(height: 8),
+                const BrandHeader(showTagline: false),
+                const SizedBox(height: 32),
                 TextFormField(
                   controller: _nameCtrl,
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Nama Lengkap',
                     prefixIcon: Icon(Icons.person_outline),
@@ -73,6 +78,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email_outlined),
@@ -86,6 +92,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _usernameCtrl,
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Username',
                     prefixIcon: Icon(Icons.badge_outlined),
@@ -96,6 +103,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller: _phoneCtrl,
                   keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'No. Telepon',
                     prefixIcon: Icon(Icons.phone_outlined),
@@ -105,11 +113,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller: _passwordCtrl,
                   obscureText: _obscure,
+                  textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
                       onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                   ),
@@ -123,6 +132,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 TextFormField(
                   controller: _confirmCtrl,
                   obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
                   decoration: const InputDecoration(
                     labelText: 'Konfirmasi Password',
                     prefixIcon: Icon(Icons.lock_outline),
@@ -131,23 +142,63 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 if (state.error != null) ...[
                   const SizedBox(height: 12),
-                  Text(state.error!, style: const TextStyle(color: AppTheme.dangerRed)),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.dangerRed.withAlpha(15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, size: 18, color: AppTheme.dangerRed),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(state.error!,
+                            style: const TextStyle(color: AppTheme.dangerRed, fontSize: 13)),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: state.status == AuthStatus.loading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryGreen,
-                    foregroundColor: Colors.white,
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: state.status == AuthStatus.loading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryGreen,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: state.status == AuthStatus.loading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Daftar'),
                   ),
-                  child: state.status == AuthStatus.loading
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Daftar', style: TextStyle(fontSize: 16)),
                 ),
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () => context.pop(),
-                  child: const Text('Sudah punya akun? Masuk'),
+                  child: RichText(
+                    text: TextSpan(
+                      text: 'Sudah punya akun? ',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                      children: [
+                        TextSpan(
+                          text: 'Masuk',
+                          style: TextStyle(
+                            color: AppTheme.primaryGreen,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),

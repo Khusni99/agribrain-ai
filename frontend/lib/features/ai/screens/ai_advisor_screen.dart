@@ -4,7 +4,11 @@ import '../../../data/models/ai_model.dart';
 import '../../../data/repositories/ai_repository.dart';
 import '../../farm/providers/farm_provider.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../data/models/farm_model.dart';
+import '../../../core/widgets/agri_card.dart';
+import '../../../core/widgets/loading_view.dart';
+import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../farm/screens/farm_list_screen.dart';
 
 class AIAdvisorScreen extends ConsumerStatefulWidget {
   const AIAdvisorScreen({super.key});
@@ -15,30 +19,43 @@ class AIAdvisorScreen extends ConsumerStatefulWidget {
 
 class _AIAdvisorScreenState extends ConsumerState<AIAdvisorScreen> {
   final _queryController = TextEditingController();
-  FarmModel? _selectedFarm;
-  FieldModel? _selectedField;
+  final _scrollController = ScrollController();
+  int? _selectedFarmId;
+  int? _selectedFieldId;
   AIAdvisorResponse? _response;
   bool _loading = false;
 
   @override
   void dispose() {
     _queryController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   Future<void> _ask() async {
-    if (_selectedFarm == null) return;
+    if (_selectedFarmId == null) return;
     setState(() => _loading = true);
     try {
       final resp = await ref.read(aiRepositoryProvider).getFarmAdvisor(
-        _selectedFarm!.id,
-        fieldId: _selectedField?.id,
+        _selectedFarmId!,
+        fieldId: _selectedFieldId,
         query: _queryController.text,
       );
       setState(() => _response = resp);
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal: $e')),
+        );
       }
     } finally {
       setState(() => _loading = false);
@@ -55,54 +72,88 @@ class _AIAdvisorScreenState extends ConsumerState<AIAdvisorScreen> {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(farmsProvider),
         child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               farmsAsync.when(
-                loading: () => const CircularProgressIndicator(),
-                error: (e, _) => Text('Gagal memuat lahan: $e'),
-                data: (farms) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DropdownButtonFormField<int>(
-                      decoration: const InputDecoration(labelText: 'Pilih Lahan'),
-                      initialValue: _selectedFarm?.id,
-                      items: farms.map((f) => DropdownMenuItem(value: f.id, child: Text(f.name))).toList(),
-                      onChanged: (id) {
-                        setState(() {
-                          _selectedFarm = farms.firstWhere((f) => f.id == id);
-                          _selectedField = null;
-                        });
-                      },
-                    ),
-                    if (_selectedFarm != null) ...[
-                      const SizedBox(height: 12),
-                      Consumer(
-                      builder: (_, ref, __) {
-                        final fieldsAsync = ref.watch(farmFieldsProvider(_selectedFarm!.id));
-                        return fieldsAsync.when(
-                          loading: () => const SizedBox(),
-                          error: (_, ___) => const SizedBox(),
-                          data: (fields) => DropdownButtonFormField<int>(
-                            decoration: const InputDecoration(labelText: 'Pilih Petak (opsional)'),
-                            initialValue: _selectedField?.id,
-                              items: [
-                                const DropdownMenuItem(value: null, child: Text('Semua Petak')),
-                                ...fields.map((f) => DropdownMenuItem(value: f.id, child: Text(f.name))),
-                              ],
-                              onChanged: (id) {
-                                setState(() {
-                                  _selectedField = id == null ? null : fields.firstWhere((f) => f.id == id);
-                                });
-                              },
-                            ),
-                          );
+                loading: () => const LoadingView(message: 'Memuat data lahan...'),
+                error: (e, _) => ErrorView(
+                  message: 'Gagal memuat lahan: $e',
+                  onRetry: () => ref.invalidate(farmsProvider),
+                ),
+                data: (farms) {
+                  if (farms.isEmpty) {
+                    return Column(
+                      children: [
+                        EmptyState(
+                          icon: Icons.agriculture,
+                          title: 'Belum ada lahan',
+                          subtitle: 'Tambahkan lahan terlebih dahulu untuk bertanya pada AI',
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FarmListScreen())),
+                          child: const Text('Tambah Lahan'),
+                        ),
+                      ],
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DropdownButtonFormField<int>(
+                        decoration: const InputDecoration(
+                          labelText: 'Pilih Lahan',
+                          prefixIcon: Icon(Icons.terrain),
+                        ),
+                        value: _selectedFarmId,
+                        hint: const Text('Pilih lahan...'),
+                        items: farms.map((f) => DropdownMenuItem(
+                          value: f.id,
+                          child: Text(f.name),
+                        )).toList(),
+                        onChanged: (id) {
+                          setState(() {
+                            _selectedFarmId = id;
+                            _selectedFieldId = null;
+                          });
                         },
                       ),
+                      if (_selectedFarmId != null) ...[
+                        const SizedBox(height: 12),
+                        Consumer(
+                          builder: (_, ref, __) {
+                            final fieldsAsync = ref.watch(farmFieldsProvider(_selectedFarmId!));
+                            return fieldsAsync.when(
+                              loading: () => const SizedBox(),
+                              error: (_, ___) => const SizedBox(),
+                              data: (fields) => DropdownButtonFormField<int>(
+                                decoration: const InputDecoration(
+                                  labelText: 'Pilih Petak (opsional)',
+                                  prefixIcon: Icon(Icons.grid_view),
+                                ),
+                                value: _selectedFieldId,
+                                hint: const Text('Semua Petak'),
+                                items: [
+                                  const DropdownMenuItem(value: null, child: Text('Semua Petak')),
+                                  ...fields.map((f) => DropdownMenuItem(value: f.id, child: Text(f.name))),
+                                ],
+                                onChanged: (id) {
+                                  setState(() {
+                                    _selectedFieldId = id;
+                                    _selectedFieldId = id;
+                                  });
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ],
-                  ],
-                ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
               TextField(
@@ -111,42 +162,61 @@ class _AIAdvisorScreenState extends ConsumerState<AIAdvisorScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Pertanyaan Anda',
                   hintText: 'Contoh: Apa yang harus saya lakukan minggu ini?',
-                  border: OutlineInputBorder(),
+                  prefixIcon: Padding(
+                    padding: EdgeInsets.only(bottom: 48),
+                    child: Icon(Icons.help_outline),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: (_selectedFarm != null && !_loading) ? _ask : null,
-                  child: _loading
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Tanya AI'),
+                child: FilledButton.icon(
+                  onPressed: (_selectedFarmId != null && !_loading) ? _ask : null,
+                  icon: _loading
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.send_rounded),
+                  label: const Text('Tanya AI'),
                 ),
               ),
               if (_response != null) ...[
                 const SizedBox(height: 24),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Saran AI', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Text(_response!.advice),
-                        if (_response!.fieldHealth != null) ...[
-                          const SizedBox(height: 16),
-                          _buildHealthCard(theme, _response!.fieldHealth!),
+                AgriCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryGreen.withAlpha(25),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.psychology, color: AppTheme.primaryGreen, size: 24),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Saran AI', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
                         ],
-                        if (_response!.recommendations != null && _response!.recommendations!.all.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          Text('Rekomendasi', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          ..._response!.recommendations!.all.take(3).map((r) => _buildRecChip(r)),
-                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(_response!.advice, style: const TextStyle(fontSize: 14, height: 1.5)),
+                      if (_response!.fieldHealth != null) ...[
+                        const SizedBox(height: 16),
+                        _buildHealthCard(_response!.fieldHealth!),
                       ],
-                    ),
+                      if (_response!.recommendations != null && _response!.recommendations!.all.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text('Rekomendasi', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        ..._response!.recommendations!.all.take(3).map(_buildRecChip),
+                      ],
+                    ],
                   ),
                 ),
               ],
@@ -157,45 +227,57 @@ class _AIAdvisorScreenState extends ConsumerState<AIAdvisorScreen> {
     );
   }
 
-  Widget _buildHealthCard(ThemeData theme, FieldHealthResponse health) {
-    final color = health.healthScore >= 70 ? AppTheme.primaryGreen
-        : health.healthScore >= 40 ? AppTheme.accentOrange : AppTheme.dangerRed;
-    return Card(
-      color: AppTheme.surfaceLight,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircularProgressIndicator(value: health.healthScore / 100, color: color, strokeWidth: 6),
-                  Text('${health.healthScore.toInt()}', style: TextStyle(fontWeight: FontWeight.bold, color: color)),
-                ],
-              ),
+  Widget _buildHealthCard(FieldHealthResponse health) {
+    final color = health.healthScore >= 70
+        ? AppTheme.primaryGreen
+        : health.healthScore >= 40
+            ? AppTheme.accentOrange
+            : AppTheme.dangerRed;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withAlpha(12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withAlpha(50)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 60, height: 60,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: health.healthScore / 100,
+                  color: color,
+                  strokeWidth: 6,
+                  backgroundColor: Colors.grey.shade200,
+                ),
+                Text('${health.healthScore.toInt()}', style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16)),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(health.fieldName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text('Status: ${health.status}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                ],
-              ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(health.fieldName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text('Status: ${health.status}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildRecChip(RecommendationItem rec) {
-    final color = rec.priority == 'high' ? AppTheme.dangerRed
-        : rec.priority == 'medium' ? AppTheme.accentOrange : AppTheme.infoBlue;
+    final color = rec.priority == 'high'
+        ? AppTheme.dangerRed
+        : rec.priority == 'medium'
+            ? AppTheme.accentOrange
+            : AppTheme.infoBlue;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../providers/disease_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/status_badge.dart';
 import '../../../data/models/disease_model.dart';
 
 class DiseaseScreen extends ConsumerWidget {
@@ -37,25 +38,23 @@ class DiseaseScreen extends ConsumerWidget {
               Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: () => _pickImage(ref, ImageSource.camera),
                       icon: const Icon(Icons.camera_alt),
                       label: const Text('Kamera'),
-                      style: ElevatedButton.styleFrom(
+                      style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.primaryGreen,
-                        foregroundColor: Colors.white,
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: () => _pickImage(ref, ImageSource.gallery),
                       icon: const Icon(Icons.photo_library),
                       label: const Text('Galeri'),
-                      style: ElevatedButton.styleFrom(
+                      style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.infoBlue,
-                        foregroundColor: Colors.white,
                       ),
                     ),
                   ),
@@ -83,7 +82,7 @@ class DiseaseScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: state.isLoading
                           ? null
                           : () => ref.read(diseaseProvider.notifier).detect(),
@@ -91,13 +90,12 @@ class DiseaseScreen extends ConsumerWidget {
                           ? const SizedBox(
                               height: 18,
                               width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
                           : const Icon(Icons.search),
                       label: Text(state.isLoading ? 'Memeriksa...' : 'Deteksi'),
-                      style: ElevatedButton.styleFrom(
+                      style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.dangerRed,
-                        foregroundColor: Colors.white,
                       ),
                     ),
                   ),
@@ -409,16 +407,14 @@ class _ResultCard extends StatelessWidget {
               value: Formatters.currency(
                   result.economicRisk.estimatedRevenueLossPerHectare),
             ),
-            _InfoRow(
-              label: 'Tingkat Risiko',
-              value: result.economicRisk.riskLevel,
-              valueStyle: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: result.economicRisk.riskLevel == 'TINGGI'
-                    ? AppTheme.dangerRed
-                    : result.economicRisk.riskLevel == 'SEDANG'
-                        ? AppTheme.accentOrange
-                        : AppTheme.primaryGreen,
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Text('Tingkat Risiko', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                  const Spacer(),
+                  StatusBadge.risk(result.economicRisk.riskLevel),
+                ],
               ),
             ),
           ],

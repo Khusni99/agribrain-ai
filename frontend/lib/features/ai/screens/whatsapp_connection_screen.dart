@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/repositories/notification_repository.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/agri_card.dart';
+import '../../../core/widgets/loading_view.dart';
+import '../../../core/widgets/error_view.dart';
 
 final whatsAppSessionProvider = FutureProvider.autoDispose((ref) async {
   return ref.read(notificationRepositoryProvider).getWhatsAppSession();
@@ -32,7 +35,6 @@ class _WhatsAppConnectionScreenState extends ConsumerState<WhatsAppConnectionScr
       );
       return;
     }
-
     setState(() => _loading = true);
     try {
       await ref.read(notificationRepositoryProvider).registerWhatsApp(phone);
@@ -68,74 +70,82 @@ class _WhatsAppConnectionScreenState extends ConsumerState<WhatsAppConnectionScr
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(
-            color: AppTheme.surfaceLight,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Icon(Icons.chat, size: 64, color: const Color(0xFF25D366)),
-                  const SizedBox(height: 12),
-                  Text('WhatsApp Agronomis Bot', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Dapatkan rekomendasi, pengingat, dan saran pertanian langsung ke WhatsApp Anda.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+          AgriCard(
+            color: AppTheme.primaryGreen.withAlpha(8),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF25D366).withAlpha(25),
+                    shape: BoxShape.circle,
                   ),
-                ],
-              ),
+                  child: const Icon(Icons.chat, size: 48, color: Color(0xFF25D366)),
+                ),
+                const SizedBox(height: 12),
+                Text('WhatsApp Agronomis Bot', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text(
+                  'Dapatkan rekomendasi, pengingat, dan saran pertanian langsung ke WhatsApp Anda.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
           sessionAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('Error: $e'),
+            loading: () => const LoadingView(message: 'Memeriksa koneksi...'),
+            error: (e, _) => ErrorView(message: 'Gagal memeriksa koneksi: $e', onRetry: () => ref.invalidate(whatsAppSessionProvider)),
             data: (session) {
               if (session.registered && session.phoneNumber != null) {
                 return Column(
                   children: [
-                    Card(
-                      color: AppTheme.primaryGreen.withAlpha(20),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.check_circle, color: AppTheme.primaryGreen),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Terhubung', style: TextStyle(fontWeight: FontWeight.bold)),
-                                  Text(session.phoneNumber!, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                                ],
-                              ),
+                    AgriCard(
+                      color: AppTheme.primaryGreen.withAlpha(12),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryGreen.withAlpha(25),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                          ],
-                        ),
+                            child: const Icon(Icons.check_circle, color: AppTheme.primaryGreen, size: 28),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Terhubung', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                Text(session.phoneNumber!, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Perintah yang tersedia', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 8),
-                            _commandItem('/lahan', 'Daftar lahan'),
-                            _commandItem('/petak', 'Daftar semua petak'),
-                            _commandItem('/petak [nama]', 'Petak di lahan tertentu'),
-                            _commandItem('/rekomendasi', 'Rekomendasi hari ini'),
-                            _commandItem('/cuaca', 'Info cuaca'),
-                            _commandItem('/jadwal', 'Jadwal kegiatan'),
-                            _commandItem('/kesehatan', 'Kesehatan tanaman'),
-                            const SizedBox(height: 8),
-                            Text('Atau tanya pertanyaan bebas tentang pertanian Anda!', style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
-                          ],
-                        ),
+                    AgriCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Perintah yang tersedia', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          _commandItem('/lahan', 'Daftar lahan'),
+                          _commandItem('/petak', 'Daftar semua petak'),
+                          _commandItem('/petak [nama]', 'Petak di lahan tertentu'),
+                          _commandItem('/rekomendasi', 'Rekomendasi hari ini'),
+                          _commandItem('/cuaca', 'Info cuaca'),
+                          _commandItem('/jadwal', 'Jadwal kegiatan'),
+                          _commandItem('/kesehatan', 'Kesehatan tanaman'),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Atau tanya pertanyaan bebas tentang pertanian Anda!',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -143,11 +153,13 @@ class _WhatsAppConnectionScreenState extends ConsumerState<WhatsAppConnectionScr
                       onPressed: _unregister,
                       icon: const Icon(Icons.link_off, color: AppTheme.dangerRed),
                       label: const Text('Putuskan Koneksi', style: TextStyle(color: AppTheme.dangerRed)),
+                      style: TextButton.styleFrom(
+                        side: BorderSide(color: AppTheme.dangerRed.withAlpha(60)),
+                      ),
                     ),
                   ],
                 );
               }
-
               return Column(
                 children: [
                   TextField(
@@ -157,16 +169,15 @@ class _WhatsAppConnectionScreenState extends ConsumerState<WhatsAppConnectionScr
                       labelText: 'Nomor WhatsApp',
                       hintText: '+6281234567890',
                       prefixIcon: Icon(Icons.phone_android),
-                      border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: _loading ? null : _register,
                       icon: _loading
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.link),
                       label: const Text('Hubungkan'),
                     ),
@@ -186,12 +197,12 @@ class _WhatsAppConnectionScreenState extends ConsumerState<WhatsAppConnectionScr
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: AppTheme.primaryGreen.withAlpha(20),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text(command, style: TextStyle(fontSize: 11, color: AppTheme.primaryGreen, fontWeight: FontWeight.bold)),
+            child: Text(command, style: TextStyle(fontSize: 11, color: AppTheme.primaryGreen, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
           ),
           const SizedBox(width: 8),
           Expanded(child: Text(description, style: const TextStyle(fontSize: 13))),

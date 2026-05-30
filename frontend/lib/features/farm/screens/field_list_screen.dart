@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/farm_provider.dart';
 import '../../../data/models/farm_model.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/loading_view.dart';
+import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/status_badge.dart';
 import 'field_form_screen.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 
@@ -26,25 +30,28 @@ class FieldListScreen extends ConsumerWidget {
         ],
       ),
       body: fieldsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        loading: () => const LoadingView(message: 'Memuat petak...'),
+        error: (e, _) => ErrorView(
+          message: 'Gagal memuat petak: $e',
+          onRetry: () => ref.invalidate(farmFieldsProvider(farm.id)),
+        ),
         data: (fields) {
           if (fields.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.grid_view, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text('Belum ada petak', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () => _openFieldForm(context, ref),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Tambah Petak'),
-                  ),
-                ],
-              ),
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                EmptyState(
+                  icon: Icons.grid_view,
+                  title: 'Belum ada petak',
+                  subtitle: 'Tambahkan petak untuk lahan ${farm.name}',
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: () => _openFieldForm(context, ref),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Tambah Petak'),
+                ),
+              ],
             );
           }
           return ListView(
@@ -137,20 +144,9 @@ class _FieldCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: field.status == 'active' ? AppTheme.primaryGreen.withAlpha(30) : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      field.status == 'active' ? 'Aktif' : 'Nonaktif',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: field.status == 'active' ? AppTheme.primaryGreen : Colors.grey.shade700,
-                      ),
-                    ),
+                  StatusBadge(
+                    label: field.status == 'active' ? 'Aktif' : 'Nonaktif',
+                    color: field.status == 'active' ? AppTheme.primaryGreen : Colors.grey,
                   ),
                 ],
               ),

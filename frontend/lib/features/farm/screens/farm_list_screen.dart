@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/farm_provider.dart';
 import '../../../data/models/farm_model.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/loading_view.dart';
+import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/empty_state.dart';
 import 'farm_form_screen.dart';
 import 'field_list_screen.dart';
 
@@ -24,37 +27,28 @@ class FarmListScreen extends ConsumerWidget {
         ],
       ),
       body: farmsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.grey),
-              const SizedBox(height: 8),
-              Text('Gagal memuat data', style: Theme.of(context).textTheme.bodyLarge),
-              TextButton(onPressed: () => ref.read(farmsProvider.notifier).load(), child: const Text('Coba Lagi')),
-            ],
-          ),
+        loading: () => const LoadingView(message: 'Memuat lahan...'),
+        error: (e, _) => ErrorView(
+          message: 'Gagal memuat data',
+          onRetry: () => ref.read(farmsProvider.notifier).load(),
         ),
         data: (farms) {
           if (farms.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.agriculture, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text('Belum ada lahan', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Text('Tambahkan lahan pertama Anda', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey)),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () => _openForm(context, ref),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Tambah Lahan'),
-                  ),
-                ],
-              ),
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                EmptyState(
+                  icon: Icons.agriculture,
+                  title: 'Belum ada lahan',
+                  subtitle: 'Tambahkan lahan pertama Anda',
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: () => _openForm(context, ref),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Tambah Lahan'),
+                ),
+              ],
             );
           }
           return RefreshIndicator(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/marketplace_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/empty_state.dart';
 
 class MarketplaceScreen extends ConsumerStatefulWidget {
   const MarketplaceScreen({super.key});
@@ -28,7 +29,6 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(marketplaceProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Pasar Tani')),
@@ -55,20 +55,18 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
             const Expanded(child: Center(child: CircularProgressIndicator()))
           else if (state.filteredProducts.isEmpty)
             Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.store_mall_directory_outlined, size: 64, color: theme.colorScheme.onSurfaceVariant.withAlpha(80)),
-                    const SizedBox(height: 12),
-                    Text('Belum ada produk', style: theme.textTheme.bodyLarge),
-                    const SizedBox(height: 4),
-                    ElevatedButton(
-                      onPressed: () => ref.read(marketplaceProvider.notifier).loadProducts(),
-                      child: const Text('Muat Ulang'),
-                    ),
-                  ],
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const EmptyState(
+                    icon: Icons.store_mall_directory_outlined,
+                    title: 'Belum ada produk',
+                  ),
+                  FilledButton(
+                    onPressed: () => ref.read(marketplaceProvider.notifier).loadProducts(),
+                    child: const Text('Muat Ulang'),
+                  ),
+                ],
               ),
             )
           else

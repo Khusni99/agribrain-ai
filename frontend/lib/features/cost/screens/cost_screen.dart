@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/cost_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/status_badge.dart';
+import '../../../core/widgets/agri_card.dart';
 
 class CostScreen extends ConsumerWidget {
   const CostScreen({super.key});
@@ -91,12 +93,14 @@ class CostScreen extends ConsumerWidget {
             );
           }),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: state.isLoading ? null : () => notifier.calculate(),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryGreen, foregroundColor: Colors.white),
-            child: state.isLoading
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Hitung Biaya', style: TextStyle(fontSize: 16)),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: state.isLoading ? null : () => notifier.calculate(),
+              child: state.isLoading
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Hitung Biaya', style: TextStyle(fontSize: 16)),
+            ),
           ),
           if (state.error != null) ...[
             const SizedBox(height: 12),
@@ -145,7 +149,21 @@ class CostScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _StatCard(label: 'ROI', value: Formatters.percentage(r.roiPercentage), color: AppTheme.accentOrange, fullWidth: true),
+          AgriCard(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('ROI', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Row(
+                  children: [
+                    Text(Formatters.percentage(r.roiPercentage), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: r.roiPercentage >= 0 ? AppTheme.primaryGreen : AppTheme.dangerRed)),
+                    const SizedBox(width: 8),
+                    StatusBadge(label: r.roiPercentage >= 0 ? 'UNTUNG' : 'RUGI', color: r.roiPercentage >= 0 ? AppTheme.primaryGreen : AppTheme.dangerRed),
+                  ],
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           Text('Rincian Biaya', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
@@ -181,14 +199,12 @@ class _StatCard extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  final bool fullWidth;
 
-  const _StatCard({required this.label, required this.value, required this.color, this.fullWidth = false});
+  const _StatCard({required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.only(bottom: fullWidth ? 0 : 0),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -196,7 +212,7 @@ class _StatCard extends StatelessWidget {
           children: [
             Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
             const SizedBox(height: 4),
-            Text(value, style: TextStyle(fontSize: fullWidth ? 18 : 14, fontWeight: FontWeight.bold, color: color)),
+            Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
           ],
         ),
       ),
