@@ -8,6 +8,8 @@ import '../features/chat/screens/chat_screen.dart';
 import '../features/disease/screens/disease_screen.dart';
 import '../features/cost/screens/cost_screen.dart';
 import '../features/marketplace/screens/marketplace_screen.dart';
+import '../features/ai/screens/ai_advisor_screen.dart';
+import '../features/ai/screens/recommendation_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -29,6 +31,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/disease', builder: (_, __) => const DiseaseScreen()),
       GoRoute(path: '/cost', builder: (_, __) => const CostScreen()),
       GoRoute(path: '/marketplace', builder: (_, __) => const MarketplaceScreen()),
+      GoRoute(path: '/ai/advisor', builder: (_, __) => const AIAdvisorScreen()),
+      GoRoute(path: '/ai/recommendations', builder: (_, __) => const RecommendationScreen()),
     ],
   );
 });

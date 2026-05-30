@@ -4,6 +4,7 @@ import '../../../data/models/farm_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import '../../timeline/screens/timeline_screen.dart';
+import '../../ai/screens/field_health_screen.dart';
 
 class FieldDetailScreen extends ConsumerWidget {
   final FarmModel farm;
@@ -65,6 +66,17 @@ class FieldDetailScreen extends ConsumerWidget {
             children: [
               Expanded(
                 child: _ActionButton(
+                  icon: Icons.favorite_outline,
+                  label: 'Kesehatan',
+                  color: AppTheme.dangerRed,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => FieldHealthScreen(fieldId: field.id, fieldName: field.name),
+                  )),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ActionButton(
                   icon: Icons.history,
                   label: 'Timeline',
                   color: AppTheme.infoBlue,
@@ -73,7 +85,11 @@ class FieldDetailScreen extends ConsumerWidget {
                   )),
                 ),
               ),
-              const SizedBox(width: 8),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
               Expanded(
                 child: _ActionButton(
                   icon: Icons.eco,

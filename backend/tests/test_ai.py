@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
-from app.database import async_session_factory
+from app.database import async_session_factory, engine, Base
 from app.models.user import User
 from app.models.farm import Farm, Field
 from app.models.crop import Crop, CropCycle
@@ -17,6 +17,8 @@ from datetime import datetime, timezone
 
 @pytest.fixture(autouse=True)
 async def setup_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     async with async_session_factory() as session:
         await session.execute(delete(WeatherData))
         await session.execute(delete(HarvestRecord))

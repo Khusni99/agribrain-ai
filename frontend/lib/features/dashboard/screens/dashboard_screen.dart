@@ -10,6 +10,10 @@ import '../../../core/theme/app_theme.dart';
 import '../../farm/screens/farm_list_screen.dart';
 import '../../timeline/screens/timeline_screen.dart';
 import '../../reminder/screens/reminder_screen.dart';
+import '../../ai/screens/ai_advisor_screen.dart';
+import '../../ai/screens/recommendation_screen.dart';
+import '../../ai/screens/whatsapp_connection_screen.dart';
+import '../../ai/screens/notification_settings_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   final int? farmId;
@@ -276,11 +280,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Text('Layanan AI', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
               ),
               DashboardCard(
-                title: 'Tanya Agronomis AI',
-                value: 'Diagnosis tanaman',
-                icon: Icons.chat_bubble_outline,
+                title: 'Agronomis AI',
+                value: 'Tanya saran pertanian',
+                icon: Icons.psychology_outlined,
                 color: AppTheme.infoBlue,
-                onTap: () => context.push('/chat'),
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => const AIAdvisorScreen(),
+                )),
+              ),
+              DashboardCard(
+                title: 'Rekomendasi AI',
+                value: 'Pupuk, semprot, panen',
+                icon: Icons.lightbulb_outline,
+                color: AppTheme.accentOrange,
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => const RecommendationScreen(),
+                )),
+              ),
+              DashboardCard(
+                title: 'Bot WhatsApp',
+                value: 'Tanya via WhatsApp',
+                icon: Icons.chat,
+                color: const Color(0xFF25D366),
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => const WhatsAppConnectionScreen(),
+                )),
+              ),
+              DashboardCard(
+                title: 'Pengaturan Notif',
+                value: 'Atur pengingat',
+                icon: Icons.notifications_outlined,
+                color: AppTheme.infoBlue,
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => const NotificationSettingsScreen(),
+                )),
               ),
               DashboardCard(
                 title: 'Deteksi Penyakit',
@@ -293,7 +326,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 title: 'Kalkulator Biaya',
                 value: 'Hitung biaya produksi',
                 icon: Icons.calculate_outlined,
-                color: AppTheme.accentOrange,
+                color: AppTheme.primaryGreen,
                 onTap: () => context.push('/cost'),
               ),
               const SizedBox(height: 8),
