@@ -14,8 +14,5 @@ COPY . .
 
 EXPOSE 8000
 
-# Set PYTHONPATH so that 'app' package is found
 ENV PYTHONPATH=/app
-
-# Run migrations on startup, then start the server
-CMD alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

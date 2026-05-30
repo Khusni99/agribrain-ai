@@ -1,9 +1,11 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from app.config import settings
 from app.database import engine
 from app.api.v1 import router
@@ -12,8 +14,22 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+async def wait_for_db(max_retries=15):
+    for attempt in range(max_retries):
+        try:
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+            logger.info("Database connected")
+            return
+        except Exception as e:
+            logger.warning("DB connect attempt %d/%d: %s", attempt + 1, max_retries, e)
+            await asyncio.sleep(2)
+    logger.error("Could not connect to database after %d attempts", max_retries)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await wait_for_db()
     yield
     await engine.dispose()
 
@@ -65,3 +81,15 @@ async def root():
         "docs": "/docs",
         "health": "/health",
     }
+
+
+@app.post("/migrate")
+async def migrate():
+    import subprocess, sys
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        capture_output=True, text=True, cwd="/app"
+    )
+    if result.returncode == 0:
+        return {"status": "ok", "output": result.stdout}
+    return {"status": "error", "output": result.stderr}, 500
