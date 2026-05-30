@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/models/user_model.dart';
@@ -70,9 +71,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   String _formatError(Object e) {
-    final msg = e.toString();
-    if (msg.contains('Invalid credentials')) return 'Email atau password salah';
-    if (msg.contains('already registered')) return 'Email atau username sudah terdaftar';
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map) {
+        final detail = data['detail']?.toString() ?? data['message']?.toString() ?? '';
+        if (detail.contains('Invalid credentials')) return 'Email atau password salah';
+        if (detail.contains('already registered')) return 'Email atau username sudah terdaftar';
+        if (detail.contains('Input should be a valid email')) return 'Format email tidak valid';
+        if (detail.isNotEmpty) return detail;
+      }
+    }
     return 'Terjadi kesalahan. Silakan coba lagi.';
   }
 }
