@@ -62,6 +62,7 @@ class DiseaseModel {
   final String? detectionProvider;
   final int? processedImageWidth;
   final int? processedImageHeight;
+  final String? imageUrl;
   final String? createdAt;
 
   DiseaseModel({
@@ -76,6 +77,7 @@ class DiseaseModel {
     this.detectionProvider,
     this.processedImageWidth,
     this.processedImageHeight,
+    this.imageUrl,
     this.createdAt,
   });
 
@@ -106,6 +108,7 @@ class DiseaseModel {
       detectionProvider: json['detection_provider'] as String?,
       processedImageWidth: json['processed_image_width'] as int?,
       processedImageHeight: json['processed_image_height'] as int?,
+      imageUrl: json['image_url'] as String?,
       createdAt: json['created_at'] as String?,
     );
   }

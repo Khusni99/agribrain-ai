@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/disease_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -63,12 +64,29 @@ class DiseaseScreen extends ConsumerWidget {
             ] else ...[
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.file(
-                  state.imageFile!,
-                  height: 250,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+                child: state.result?.imageUrl != null
+                    ? CachedNetworkImage(
+                        imageUrl: state.result!.imageUrl!,
+                        height: 250,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => const SizedBox(
+                          height: 250,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                        errorWidget: (_, __, ___) => Image.file(
+                          state.imageFile!,
+                          height: 250,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Image.file(
+                        state.imageFile!,
+                        height: 250,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
               ),
               const SizedBox(height: 16),
               Row(

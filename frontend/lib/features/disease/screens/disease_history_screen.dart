@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/disease_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -65,6 +66,27 @@ class _DiseaseHistoryScreenState extends ConsumerState<DiseaseHistoryScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              if (item.imageUrl != null) ...[
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: CachedNetworkImage(
+                                    imageUrl: item.imageUrl!,
+                                    height: 160,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    placeholder: (_, __) => Container(
+                                      height: 160,
+                                      color: theme.colorScheme.surfaceContainerHighest,
+                                    ),
+                                    errorWidget: (_, __, ___) => Container(
+                                      height: 160,
+                                      color: theme.colorScheme.surfaceContainerHighest,
+                                      child: const Icon(Icons.broken_image),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
                               Row(
                                 children: [
                                   Container(

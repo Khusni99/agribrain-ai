@@ -16,6 +16,7 @@ from app.ml.disease_detector import DiseaseDetector
 from app.ml.schemas import DetectionResponse as MLDetectionResponse
 from app.ml.utils.image_processing import detect_image_format, validate_image_bytes
 from app.services.fertilizer import FertilizerService
+from app.services.cloudinary_service import upload_image
 
 router = APIRouter()
 agronomist = AgronomistAgent()
@@ -98,9 +99,12 @@ async def detect_disease(
     with open(image_path, "wb") as f:
         f.write(image_bytes)
 
+    cloudinary_url = await upload_image(image_bytes)
+
     detection_record = DiseaseDetection(
         user_id=user.id if user else None,
         image_path=image_path,
+        cloudinary_url=cloudinary_url,
         original_filename=file.filename,
         file_size_bytes=len(image_bytes),
         content_type=file.content_type,
@@ -129,6 +133,7 @@ async def detect_disease(
         detection_provider=result.detection_provider,
         processed_image_width=result.processed_image_width,
         processed_image_height=result.processed_image_height,
+        image_url=cloudinary_url,
         created_at=detection_record.created_at,
     )
 
@@ -156,6 +161,7 @@ async def list_detections(
             prevention=r.prevention or [],
             economic_risk=r.economic_risk or {},
             detection_provider=r.detection_provider,
+            image_url=r.cloudinary_url,
             created_at=r.created_at,
         )
         for r in records
@@ -184,6 +190,7 @@ async def get_detection(
         prevention=record.prevention or [],
         economic_risk=record.economic_risk or {},
         detection_provider=record.detection_provider,
+        image_url=record.cloudinary_url,
         created_at=record.created_at,
     )
 

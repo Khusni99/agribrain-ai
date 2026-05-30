@@ -9,10 +9,21 @@ def _ensure_async_driver(url: str) -> str:
             return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
         return url
     if url.startswith("postgresql+asyncpg://") or url.startswith("postgresql+psycopg://"):
+        asyncpg_url = url
+    elif url.startswith("postgresql://"):
+        asyncpg_url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    else:
         return url
-    if url.startswith("postgresql://"):
-        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    return url
+    # asyncpg uses 'ssl' param, not 'sslmode'
+    asyncpg_url = asyncpg_url.replace("?sslmode=require", "?ssl=true")
+    asyncpg_url = asyncpg_url.replace("&sslmode=require", "&ssl=true")
+    asyncpg_url = asyncpg_url.replace("?sslmode=verify-full", "?ssl=true")
+    asyncpg_url = asyncpg_url.replace("&sslmode=verify-full", "&ssl=true")
+    asyncpg_url = asyncpg_url.replace("?sslmode=verify-ca", "?ssl=true")
+    asyncpg_url = asyncpg_url.replace("&sslmode=verify-ca", "&ssl=true")
+    asyncpg_url = asyncpg_url.replace("?sslmode=disable", "?ssl=false")
+    asyncpg_url = asyncpg_url.replace("&sslmode=disable", "&ssl=false")
+    return asyncpg_url
 
 
 class Settings(BaseSettings):
@@ -38,13 +49,20 @@ class Settings(BaseSettings):
     WEATHER_API_KEY: Optional[str] = None
     WEATHER_API_URL: str = "https://api.openweathermap.org/data/2.5"
 
+    CLOUDINARY_CLOUD_NAME: Optional[str] = None
+    CLOUDINARY_API_KEY: Optional[str] = None
+    CLOUDINARY_API_SECRET: Optional[str] = None
+
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+
+    DATABASE_URL: Optional[str] = None
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
     @property
     def db_url(self) -> str:
+        import os
         from pathlib import Path
         env_file = Path(".env")
         if env_file.exists():
@@ -53,7 +71,8 @@ class Settings(BaseSettings):
             db_url = env_vals.get("DATABASE_URL")
             if db_url:
                 return _ensure_async_driver(db_url)
-        import os
+        elif self.DATABASE_URL:
+            return _ensure_async_driver(self.DATABASE_URL)
         if os.environ.get("USE_POSTGRES"):
             return (
                 f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"

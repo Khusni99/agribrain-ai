@@ -60,6 +60,7 @@ class DiseaseDetectionCreateResponse(BaseModel):
     detection_provider: Optional[str] = None
     processed_image_width: Optional[int] = None
     processed_image_height: Optional[int] = None
+    image_url: Optional[str] = None
     created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -9,6 +9,7 @@ class DiseaseDetection(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=True, index=True)
     image_path = Column(String)
+    cloudinary_url = Column(String, nullable=True)
     original_filename = Column(String)
     file_size_bytes = Column(Integer)
     content_type = Column(String)
