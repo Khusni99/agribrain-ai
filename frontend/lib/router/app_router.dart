@@ -6,6 +6,7 @@ import '../features/auth/screens/register_screen.dart';
 import '../features/dashboard/screens/dashboard_screen.dart';
 import '../features/chat/screens/chat_screen.dart';
 import '../features/disease/screens/disease_screen.dart';
+import '../features/disease/screens/disease_history_screen.dart';
 import '../features/cost/screens/cost_screen.dart';
 import '../features/marketplace/screens/marketplace_screen.dart';
 import '../features/ai/screens/ai_advisor_screen.dart';
@@ -28,7 +29,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(path: '/dashboard', builder: (_, __) => const DashboardScreen()),
       GoRoute(path: '/chat', builder: (_, __) => const ChatScreen()),
-      GoRoute(path: '/disease', builder: (_, __) => const DiseaseScreen()),
+      GoRoute(
+        path: '/disease',
+        builder: (_, __) => const DiseaseScreen(),
+        routes: [
+          GoRoute(
+            path: 'history',
+            builder: (_, __) => const DiseaseHistoryScreen(),
+          ),
+        ],
+      ),
       GoRoute(path: '/cost', builder: (_, __) => const CostScreen()),
       GoRoute(path: '/marketplace', builder: (_, __) => const MarketplaceScreen()),
       GoRoute(path: '/ai/advisor', builder: (_, __) => const AIAdvisorScreen()),

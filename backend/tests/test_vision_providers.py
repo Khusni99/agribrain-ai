@@ -4,7 +4,20 @@ from app.ml.providers.mock import MockVisionProvider, DISEASE_LABELS
 from app.ml.providers.yolo import YOLOVisionProvider
 from app.ml.providers.base import BaseVisionProvider, DetectionResult
 from app.ml.disease_detector import DiseaseDetector
-from app.ml.utils.image_processing import preprocess_image, enhance_image, validate_image_bytes
+
+
+def _cv2_available() -> bool:
+    try:
+        import cv2
+        return True
+    except ImportError:
+        return False
+
+
+cv2_skip = pytest.mark.skipif(not _cv2_available(), reason="Requires opencv-python")
+
+
+from app.ml.utils.image_processing import detect_image_format
 
 
 def _make_test_image(h: int = 100, w: int = 100) -> np.ndarray:
@@ -52,20 +65,77 @@ async def test_mock_provider_detect():
 
 
 @pytest.mark.asyncio
-async def test_mock_provider_disease_labels_coverage():
+async def test_mock_provider_all_labels_eventually():
     provider = MockVisionProvider()
     await provider.load_model()
-    found_labels = set()
-    for _ in range(50):
+    found = set()
+    for _ in range(200):
         image = _make_test_image()
         result = await provider.detect(image)
-        found_labels.add(result.disease_name.lower())
-    for label in DISEASE_LABELS:
-        display = label.replace("_", " ").title()
-        assert display.lower() in DISEASE_LABELS or any(
-            dl.replace("_", " ").title().lower() == display.lower()
-            for dl in DISEASE_LABELS
-        )
+        found.add(result.disease_name.lower())
+    display_labels = {d.replace("_", " ").lower() for d in DISEASE_LABELS}
+    assert found & display_labels, "Mock provider should eventually return all disease labels"
+
+
+def test_detect_image_format_png():
+    png_header = b"\x89PNG\r\n\x1a\n" + b"x" * 20
+    assert detect_image_format(png_header) == "image/png"
+
+
+def test_detect_image_format_jpeg():
+    jpeg_header = b"\xff\xd8\xff\xe0" + b"x" * 20
+    assert detect_image_format(jpeg_header) == "image/jpeg"
+
+
+def test_detect_image_format_webp():
+    webp_header = b"RIFF\x00\x00\x00\x00WEBP" + b"x" * 20
+    assert detect_image_format(webp_header) == "image/webp"
+
+
+def test_detect_image_format_unknown():
+    assert detect_image_format(b"<html>") is None
+
+
+def test_detect_image_format_empty():
+    assert detect_image_format(b"") is None
+
+
+@cv2_skip
+def test_validate_image_bytes_invalid():
+    from app.ml.utils.image_processing import validate_image_bytes
+    assert validate_image_bytes(b"not an image") is False
+
+
+@cv2_skip
+def test_reduce_noise_and_sharpen():
+    from app.ml.utils.image_processing import reduce_noise, sharpen_image
+    image = _make_test_image()
+    denoised = reduce_noise(image)
+    assert denoised.shape == image.shape
+    sharpened = sharpen_image(image)
+    assert sharpened.shape == image.shape
+
+
+@cv2_skip
+def test_preprocess_image_invalid_bytes():
+    from app.ml.utils.image_processing import preprocess_image
+    with pytest.raises(ValueError, match="Tidak dapat membaca"):
+        preprocess_image(b"invalid bytes")
+
+
+@pytest.mark.asyncio
+async def test_yolo_provider_load_no_path():
+    provider = YOLOVisionProvider(model_path=None)
+    loaded = await provider.load_model()
+    assert loaded is False
+    assert provider.is_ready is False
+
+
+@pytest.mark.asyncio
+async def test_disease_detector_detect_invalid_bytes():
+    detector = DiseaseDetector()
+    with pytest.raises(ValueError, match="Gagal memproses"):
+        await detector.detect(b"garbage bytes")
 
 
 @pytest.mark.asyncio

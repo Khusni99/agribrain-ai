@@ -14,6 +14,7 @@ from app.schemas.diagnosis import (
 from app.agents.agronomist import AgronomistAgent
 from app.ml.disease_detector import DiseaseDetector
 from app.ml.schemas import DetectionResponse as MLDetectionResponse
+from app.ml.utils.image_processing import detect_image_format, validate_image_bytes
 from app.services.fertilizer import FertilizerService
 
 router = APIRouter()
@@ -74,6 +75,19 @@ async def detect_disease(
 
     if not image_bytes:
         raise HTTPException(status_code=400, detail="File kosong")
+
+    detected_mime = detect_image_format(image_bytes)
+    if detected_mime is None:
+        raise HTTPException(
+            status_code=400,
+            detail="File tidak dikenali sebagai gambar. Unggah file PNG, JPG, atau WebP yang valid.",
+        )
+
+    if not validate_image_bytes(image_bytes):
+        raise HTTPException(
+            status_code=400,
+            detail="Gambar rusak atau tidak dapat dibaca. Unggah ulang gambar yang valid.",
+        )
 
     result: MLDetectionResponse = await disease_detector.detect(image_bytes)
 

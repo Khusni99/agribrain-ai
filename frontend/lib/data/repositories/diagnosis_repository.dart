@@ -31,4 +31,9 @@ class DiagnosisRepository {
     final response = await _api.uploadBytes('/diagnosis/detect-disease', imageBytes, filename);
     return DiseaseModel.fromJson(response.data);
   }
+
+  Future<List<DiseaseModel>> getDetectionHistory({int limit = 20}) async {
+    final response = await _api.get('/diagnosis/detections', queryParams: {'limit': limit});
+    return (response.data as List).map((e) => DiseaseModel.fromJson(e)).toList();
+  }
 }

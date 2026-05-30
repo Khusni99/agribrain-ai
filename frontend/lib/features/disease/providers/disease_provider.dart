@@ -8,15 +8,33 @@ class DiseaseState {
   final File? imageFile;
   final DiseaseModel? result;
   final String? error;
+  final List<DiseaseModel> history;
+  final bool historyLoading;
 
-  const DiseaseState({this.isLoading = false, this.imageFile, this.result, this.error});
+  const DiseaseState({
+    this.isLoading = false,
+    this.imageFile,
+    this.result,
+    this.error,
+    this.history = const [],
+    this.historyLoading = false,
+  });
 
-  DiseaseState copyWith({bool? isLoading, File? imageFile, DiseaseModel? result, String? error}) {
+  DiseaseState copyWith({
+    bool? isLoading,
+    File? imageFile,
+    DiseaseModel? result,
+    String? error,
+    List<DiseaseModel>? history,
+    bool? historyLoading,
+  }) {
     return DiseaseState(
       isLoading: isLoading ?? this.isLoading,
       imageFile: imageFile ?? this.imageFile,
       result: result ?? this.result,
       error: error,
+      history: history ?? this.history,
+      historyLoading: historyLoading ?? this.historyLoading,
     );
   }
 }
@@ -35,10 +53,21 @@ class DiseaseNotifier extends StateNotifier<DiseaseState> {
     state = state.copyWith(isLoading: true, result: null, error: null);
     try {
       final bytes = await state.imageFile!.readAsBytes();
-      final result = await _repo.detectDisease(bytes, state.imageFile!.path.split('/').last);
+      final filename = state.imageFile!.path.split(RegExp(r'[/\\]')).last;
+      final result = await _repo.detectDisease(bytes, filename);
       state = state.copyWith(isLoading: false, result: result);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadHistory() async {
+    state = state.copyWith(historyLoading: true);
+    try {
+      final history = await _repo.getDetectionHistory();
+      state = state.copyWith(historyLoading: false, history: history);
+    } catch (e) {
+      state = state.copyWith(historyLoading: false, error: e.toString());
     }
   }
 
